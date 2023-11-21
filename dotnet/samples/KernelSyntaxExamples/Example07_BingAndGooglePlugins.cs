@@ -52,7 +52,7 @@ public static class Example07_BingAndGooglePlugins
             await Example1Async(kernel, "bing");
             await Example2Async(kernel);
         }
-
+        
         // Load Google plugin
         string googleApiKey = TestConfiguration.Google.ApiKey;
         string googleSearchEngineId = TestConfiguration.Google.SearchEngineId;

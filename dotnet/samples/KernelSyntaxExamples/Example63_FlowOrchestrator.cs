@@ -136,8 +136,8 @@ provides:
         var webSearchEnginePlugin = new WebSearchEnginePlugin(bingConnector);
         using var loggerFactory = LoggerFactory.Create(loggerBuilder =>
             loggerBuilder
-                .AddConsole()
-                .AddFilter(null, LogLevel.Error));
+                .AddConsole());
+                //.AddFilter(null, LogLevel.Error));
 
         Dictionary<object, string?> plugins = new()
         {
