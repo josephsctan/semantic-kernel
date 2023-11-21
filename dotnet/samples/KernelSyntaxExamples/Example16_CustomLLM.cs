@@ -29,8 +29,14 @@ using RepoUtils;
  */
 public class MyTextCompletionService : ITextCompletion
 {
+    public string? ModelId { get; private set; }
+
+    public IReadOnlyDictionary<string, string> Attributes => new Dictionary<string, string>();
+
     public Task<IReadOnlyList<ITextResult>> GetCompletionsAsync(string text, AIRequestSettings? requestSettings, CancellationToken cancellationToken = default)
     {
+        this.ModelId = requestSettings?.ModelId;
+
         return Task.FromResult<IReadOnlyList<ITextResult>>(new List<ITextResult>
         {
             new MyTextCompletionStreamingResult()
@@ -100,7 +106,7 @@ public static class Example16_CustomLLM
     {
         Console.WriteLine("======== Custom LLM - Text Completion - SKFunction ========");
 
-        IKernel kernel = new KernelBuilder()
+        Kernel kernel = new KernelBuilder()
             .WithLoggerFactory(ConsoleLogger.LoggerFactory)
             // Add your text completion service as a singleton instance
             .WithAIService<ITextCompletion>("myService1", new MyTextCompletionService())
@@ -110,9 +116,9 @@ public static class Example16_CustomLLM
 
         const string FunctionDefinition = "Does the text contain grammar errors (Y/N)? Text: {{$input}}";
 
-        var textValidationFunction = kernel.CreateSemanticFunction(FunctionDefinition);
+        var textValidationFunction = kernel.CreateFunctionFromPrompt(FunctionDefinition);
 
-        var result = await textValidationFunction.InvokeAsync("I mised the training session this morning", kernel);
+        var result = await textValidationFunction.InvokeAsync(kernel, "I mised the training session this morning");
         Console.WriteLine(result.GetValue<string>());
 
         // Details of the my custom model response
@@ -136,7 +142,7 @@ public static class Example16_CustomLLM
     {
         Console.WriteLine("======== Custom LLM  - Text Completion - Raw Streaming ========");
 
-        IKernel kernel = new KernelBuilder().WithLoggerFactory(ConsoleLogger.LoggerFactory).Build();
+        Kernel kernel = new KernelBuilder().WithLoggerFactory(ConsoleLogger.LoggerFactory).Build();
         ITextCompletion textCompletion = new MyTextCompletionService();
 
         var prompt = "Write one paragraph why AI is awesome";

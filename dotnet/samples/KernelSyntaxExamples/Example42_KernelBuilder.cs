@@ -16,7 +16,6 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.AI.TextCompletion;
 using Microsoft.SemanticKernel.Connectors.AI.OpenAI.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AI.OpenAI.TextEmbedding;
-using Microsoft.SemanticKernel.Diagnostics;
 using Microsoft.SemanticKernel.Http;
 using Microsoft.SemanticKernel.Memory;
 using Microsoft.SemanticKernel.Plugins.Memory;
@@ -38,10 +37,10 @@ public static class Example42_KernelBuilder
         string azureOpenAIEmbeddingDeployment = TestConfiguration.AzureOpenAIEmbeddings.DeploymentName;
 
 #pragma warning disable CA1852 // Seal internal types
-        IKernel kernel1 = new KernelBuilder().Build();
+        Kernel kernel1 = new KernelBuilder().Build();
 #pragma warning restore CA1852 // Seal internal types
 
-        IKernel kernel2 = new KernelBuilder().Build();
+        Kernel kernel2 = new KernelBuilder().Build();
 
         // ==========================================================================================================
         // new KernelBuilder() returns a new builder instance, in case you want to configure the builder differently.
@@ -73,13 +72,13 @@ public static class Example42_KernelBuilder
         var loggerFactory = NullLoggerFactory.Instance;
         var memoryStorage = new VolatileMemoryStore();
         var textEmbeddingGenerator = new AzureOpenAITextEmbeddingGeneration(
-            modelId: azureOpenAIEmbeddingDeployment,
+            deploymentName: azureOpenAIEmbeddingDeployment,
             endpoint: azureOpenAIEndpoint,
             apiKey: azureOpenAIKey,
             loggerFactory: loggerFactory);
 
         var memory = new SemanticTextMemory(memoryStorage, textEmbeddingGenerator);
-        var plugins = new FunctionCollection();
+        var plugins = new SKPluginCollection();
 
         var httpHandlerFactory = BasicHttpRetryHandlerFactory.Instance;
         //var httpHandlerFactory = new PollyHttpRetryHandlerFactory( your policy );
@@ -88,16 +87,16 @@ public static class Example42_KernelBuilder
         using var httpClient = new HttpClient(httpHandler);
         var aiServices = new AIServiceCollection();
         ITextCompletion Factory() => new AzureOpenAIChatCompletion(
-            modelId: azureOpenAIChatCompletionDeployment,
+            deploymentName: azureOpenAIChatCompletionDeployment,
             endpoint: azureOpenAIEndpoint,
             apiKey: azureOpenAIKey,
-            httpClient,
-            loggerFactory);
+            httpClient: httpClient,
+            loggerFactory: loggerFactory);
         aiServices.SetService("foo", Factory);
         IAIServiceProvider aiServiceProvider = aiServices.Build();
 
         // Create kernel manually injecting all the dependencies
-        using var kernel3 = new Kernel(plugins, aiServiceProvider, memory, httpHandlerFactory, loggerFactory);
+        var kernel3 = new Kernel(aiServiceProvider, plugins, httpHandlerFactory: httpHandlerFactory, loggerFactory: loggerFactory);
 
         // ==========================================================================================================
         // The kernel builder purpose is to simplify this process, automating how dependencies
