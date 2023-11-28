@@ -33,11 +33,6 @@ public static class Example22_OpenApiPlugin_AzureKeyVault
     {
         var kernel = new KernelBuilder()
             .WithLoggerFactory(ConsoleLogger.LoggerFactory)
-            .WithRetryBasic(new()
-            {
-                MaxRetryCount = 3,
-                UseExponentialBackoff = true
-            })
             .Build();
 
         var type = typeof(PluginResourceNames);
@@ -61,9 +56,9 @@ public static class Example22_OpenApiPlugin_AzureKeyVault
         contextVariables.Set("api-version", "7.0");
 
         // Run
-        var kernelResult = await kernel.RunAsync(contextVariables, plugin["GetSecret"]);
+        var functionResult = await kernel.InvokeAsync(plugin["GetSecret"], contextVariables);
 
-        var result = kernelResult.GetValue<RestApiOperationResponse>();
+        var result = functionResult.GetValue<RestApiOperationResponse>();
 
         Console.WriteLine("GetSecret function result: {0}", result?.Content?.ToString());
     }
@@ -96,9 +91,9 @@ public static class Example22_OpenApiPlugin_AzureKeyVault
         contextVariables.Set("enabled", "<enabled>");
 
         // Run
-        var kernelResult = await kernel.RunAsync(contextVariables, plugin["SetSecret"]);
+        var functionResult = await kernel.InvokeAsync(plugin["SetSecret"], contextVariables);
 
-        var result = kernelResult.GetValue<RestApiOperationResponse>();
+        var result = functionResult.GetValue<RestApiOperationResponse>();
 
         Console.WriteLine("SetSecret function result: {0}", result?.Content?.ToString());
     }
