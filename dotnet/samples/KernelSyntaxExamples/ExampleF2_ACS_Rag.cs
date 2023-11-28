@@ -18,7 +18,7 @@ using RepoUtils;
  * This example shows how to use Stepwise Planner to create and run a stepwise plan for a given goal.
  */
 // ReSharper disable once InconsistentNaming
-public static class ExampleF1_Rag
+public static class ExampleF2_ACS_Rag
 {
     // Used to override the max allowed tokens when running the plan
     internal static int? ChatMaxTokens = null;
@@ -32,44 +32,10 @@ public static class ExampleF1_Rag
 
     public static async Task RunAsync()
     {
-        string[] questions = new string[]
-        {
-            "Was the eiffel tower supposed to be temporary?",
-            //"What is the weather in Seattle?",
-            //"What is the tallest mountain on Earth? How tall is it divided by 2?",
-            //"What is the capital of France? Who is that city's current mayor? What percentage of their life has been in the 21st century as of today?",
-            //"What is the current day of the calendar year? Using that as an angle in degrees, what is the area of a unit circle with that angle?",
-            //"If a spacecraft travels at 0.99 the speed of light and embarks on a journey to the nearest star system, Alpha Centauri, which is approximately 4.37 light-years away, how much time would pass on Earth during the spacecraft's voyage?"
-        };
-
-        foreach (var question in questions)
-        {
-            for (int i = 0; i < 1; i++)
-            {
-                // await RunTextCompletionAsync(question);
-                await RunChatCompletionAsync(question);
-            }
-        }
-
-        // PrintResults();
-    }
-
-    // print out summary table of ExecutionResults
-    private static void PrintResults()
-    {
-        Console.WriteLine("**************************");
-        Console.WriteLine("Execution Results Summary:");
-        Console.WriteLine("**************************");
-
-        foreach (var question in s_executionResults.Select(s => s.question).Distinct())
-        {
-            Console.WriteLine("Question: " + question);
-            Console.WriteLine("Mode\tModel\tAnswer\tStepsTaken\tIterations\tTimeTaken");
-            foreach (var er in s_executionResults.OrderByDescending(s => s.model).Where(s => s.question == question))
-            {
-                Console.WriteLine($"{er.mode}\t{er.model}\t{er.stepsTaken}\t{er.iterations}\t{er.timeTaken}\t{er.answer}");
-            }
-        }
+        //var question = "How can I configure the Hololens?";
+        // var question = "What is a Leica 360  and what myths should I be aware of?";
+        var question = "What ISO 19650 certification does BECA have?";
+        await RunChatCompletionAsync(question);
     }
 
     private struct ExecutionResult
@@ -84,7 +50,7 @@ public static class ExampleF1_Rag
     }
 
     private static readonly List<ExecutionResult> s_executionResults = new();
-     
+
 
     private static async Task RunChatCompletionAsync(string question, string? model = null)
     {
@@ -98,10 +64,9 @@ public static class ExampleF1_Rag
     private static async Task RunWithQuestionAsync(Kernel kernel, ExecutionResult currentExecutionResult, string question, int? MaxTokens = null)
     {
         currentExecutionResult.question = question;
-        // var bingConnector = new BingConnector(TestConfiguration.Bing.ApiKey);
-        var rapPlugin = new RandomAnswerPlugin(ConsoleLogger.LoggerFactory);
+        var acsPlugin = new ACSRagPlugin(ConsoleLogger.LoggerFactory);
 
-        kernel.ImportPluginFromObject(rapPlugin, "RandomAnswerPlugin");
+        kernel.ImportPluginFromObject(acsPlugin, nameof(ACSRagPlugin));
         //kernel.ImportFunctions(new LanguageCalculatorPlugin(kernel), "semanticCalculator");
         //kernel.ImportFunctions(new TimePlugin(), "time");
 
