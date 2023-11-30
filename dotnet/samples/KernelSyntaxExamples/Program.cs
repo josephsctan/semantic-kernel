@@ -22,6 +22,8 @@ public static class Program
         CancellationToken cancelToken = cancellationTokenSource.ConsoleCancellationToken();
 
         string? defaultFilter = null; // Modify to filter examples
+        //defaultFilter = "ExampleF3_Random_Rag";
+        //defaultFilter = "Example66_FunctionCallingStepwisePlanner";
         defaultFilter = "ExampleF2_ACS_Rag";
 
         // Check if args[0] is provided

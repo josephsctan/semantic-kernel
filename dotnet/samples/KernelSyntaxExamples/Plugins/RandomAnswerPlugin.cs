@@ -55,7 +55,7 @@ public sealed class RandomAnswerPlugin
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    [SKFunction, Description("Return some information in answer to a question. If the information provided does not answer the question, try calling again.")]
+    [KernelFunction, Description("Return some information in answer to a question. If the information provided does not answer the question, try calling again.")]
     public async Task<string> ProvideInfoAsync(
         [Description("The question to answer")] string query,
         CancellationToken cancellationToken = default)

@@ -21,11 +21,10 @@ public sealed class ACSRagPlugin
     {
         this._logger = loggerFactory.CreateLogger(nameof(ACSRagPlugin));
     }
-
     /// <summary>
     /// Return a random piece of information
     /// </summary>
-    [SKFunction, Description("Search my knowledge base to return information to answer the user's question. " +
+    [KernelFunction, Description("Search my knowledge base to return information to answer the user's question. " +
         "If the results I return do not answer the question well, try calling again.")]
     public async Task<string> AzureCognitiveSearchAsync(
         [Description("The question to answer")] string query,

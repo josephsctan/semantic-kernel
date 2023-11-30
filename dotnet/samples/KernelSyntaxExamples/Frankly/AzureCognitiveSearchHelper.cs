@@ -23,7 +23,7 @@ namespace Frankly
     {
         AzureCognitiveSearchSettings searchSettings = new AzureCognitiveSearchSettings()
         {
-            IndexName = "dd-sharepoint-custom-index",
+            IndexName = "dd-sharepoint-custom-index2",
             SemanticConfig = "dd-semantic-config",
             Endpoint = "https://frankly-cognitive-search-basic.search.windows.net",
             Key = "g1Nir0MToV9jRcefqJLxlrgoimHRYlqfT0bqddkS2TAzSeCYJSwU"

@@ -5,14 +5,14 @@ using Microsoft.SemanticKernel.Planning;
 using Plugins;
 using RepoUtils;
 
-public static class ExampleF2_ACS_Rag
+public static class ExampleF3_Random_Rag
 {
+
     public static async Task RunAsync()
     {
         string[] questions = new string[]
         {
-            "What ISO 19650 certification does BECA have?",
-            "What the fuck to you use for VR at BECA?",
+            "Was the eiffel tower supposed to be temporary?",
         };
 
         var kernel = InitializeKernel();
@@ -42,7 +42,8 @@ public static class ExampleF2_ACS_Rag
         Console.WriteLine("Hit any key to exit");
 
         Console.ReadKey();
-    } 
+    }
+
     /// <summary>
     /// Initialize the kernel and load plugins.
     /// </summary>
@@ -57,10 +58,10 @@ public static class ExampleF2_ACS_Rag
                 TestConfiguration.AzureOpenAI.ApiKey)
             .Build();
 
-        var acsPlugin = new ACSRagPlugin(ConsoleLogger.LoggerFactory);
-        kernel.ImportPluginFromObject(acsPlugin, nameof(ACSRagPlugin));
+        // add random answer 
+        var rapPlugin = new RandomAnswerPlugin(ConsoleLogger.LoggerFactory);
+        kernel.ImportPluginFromObject(rapPlugin, "RandomAnswerPlugin");
 
         return kernel;
-
     }
 }
