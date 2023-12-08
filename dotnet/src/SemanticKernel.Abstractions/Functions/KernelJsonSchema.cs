@@ -5,8 +5,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.SemanticKernel.Text;
 
-#pragma warning disable IDE0130
-// ReSharper disable once CheckNamespace - Using the main namespace
 namespace Microsoft.SemanticKernel;
 
 /// <summary>Represents JSON Schema for describing types used in <see cref="KernelFunction"/>s.</summary>
@@ -15,6 +13,22 @@ public sealed class KernelJsonSchema
 {
     /// <summary>The schema stored as a string.</summary>
     private string? _schemaAsString;
+
+    /// <summary>Parses a JSON Schema for a parameter type.</summary>
+    /// <param name="jsonSchema">The JSON Schema as a string.</param>
+    /// <returns>A parsed <see cref="KernelJsonSchema"/>.</returns>
+    /// <remarks>
+    /// Id the jsonSchema is null or empty, null is returned.
+    /// </remarks>
+    public static KernelJsonSchema? ParseOrNull(string? jsonSchema)
+    {
+        if (string.IsNullOrEmpty(jsonSchema))
+        {
+            return null;
+        }
+
+        return new(JsonSerializer.Deserialize<JsonElement>(jsonSchema!));
+    }
 
     /// <summary>Parses a JSON Schema for a parameter type.</summary>
     /// <param name="jsonSchema">The JSON Schema as a string.</param>

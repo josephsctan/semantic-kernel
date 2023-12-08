@@ -1,14 +1,12 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Functions.OpenAPI.Extensions;
-using Microsoft.SemanticKernel.Orchestration;
 using Microsoft.SemanticKernel.Planning.Handlebars;
+using Microsoft.SemanticKernel.Plugins.OpenApi;
 using Plugins.DictionaryPlugin;
 using RepoUtils;
 
@@ -48,18 +46,19 @@ public static class Example65_HandlebarsPlanner
     {
         string apiKey = TestConfiguration.AzureOpenAI.ApiKey;
         string chatDeploymentName = TestConfiguration.AzureOpenAI.ChatDeploymentName;
+        string chatModelId = TestConfiguration.AzureOpenAI.ChatModelId;
         string endpoint = TestConfiguration.AzureOpenAI.Endpoint;
 
-        if (apiKey == null || chatDeploymentName == null || endpoint == null)
+        if (apiKey == null || chatDeploymentName == null || chatModelId == null || endpoint == null)
         {
-            Console.WriteLine("Azure endpoint, apiKey, or deploymentName not found. Skipping example.");
+            Console.WriteLine("Azure endpoint, apiKey, deploymentName, or modelId not found. Skipping example.");
             return;
         }
 
         var kernel = new KernelBuilder()
-            .WithLoggerFactory(ConsoleLogger.LoggerFactory)
-            .WithAzureOpenAIChatCompletion(
+            .AddAzureOpenAIChatCompletion(
                 deploymentName: chatDeploymentName,
+                modelId: chatModelId,
                 endpoint: endpoint,
                 serviceId: "AzureOpenAIChat",
                 apiKey: apiKey)
@@ -67,11 +66,11 @@ public static class Example65_HandlebarsPlanner
 
         if (pluginDirectoryNames[0] == StringParamsDictionaryPlugin.PluginName)
         {
-            kernel.ImportPluginFromObject(new StringParamsDictionaryPlugin(), StringParamsDictionaryPlugin.PluginName);
+            kernel.ImportPluginFromType<StringParamsDictionaryPlugin>(StringParamsDictionaryPlugin.PluginName);
         }
         else if (pluginDirectoryNames[0] == ComplexParamsDictionaryPlugin.PluginName)
         {
-            kernel.ImportPluginFromObject(new ComplexParamsDictionaryPlugin(), ComplexParamsDictionaryPlugin.PluginName);
+            kernel.ImportPluginFromType<ComplexParamsDictionaryPlugin>(ComplexParamsDictionaryPlugin.PluginName);
         }
         else if (pluginDirectoryNames[0] == CourseraPluginName)
         {
@@ -114,8 +113,8 @@ public static class Example65_HandlebarsPlanner
         Console.WriteLine($"\nOriginal plan:\n{plan}");
 
         // Execute the plan
-        var result = plan.Invoke(kernel, new ContextVariables(), new Dictionary<string, object?>(), CancellationToken.None);
-        Console.WriteLine($"\nResult:\n{result.GetValue<string>()}\n");
+        var result = plan.Invoke(kernel, new KernelArguments(), CancellationToken.None);
+        Console.WriteLine($"\nResult:\n{result}\n");
     }
 
     private static async Task PlanNotPossibleSampleAsync(bool shouldPrintPrompt = false)

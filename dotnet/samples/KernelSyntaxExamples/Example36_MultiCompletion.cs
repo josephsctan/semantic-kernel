@@ -2,9 +2,8 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.SemanticKernel.AI.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.AI.OpenAI;
-using Microsoft.SemanticKernel.Connectors.AI.OpenAI.ChatCompletion;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 /**
  * The following example shows how to use Semantic Kernel with streaming Multiple Results Chat Completion.
@@ -22,26 +21,27 @@ public static class Example36_MultiCompletion
     {
         Console.WriteLine("======== Azure OpenAI - Multiple Chat Completion ========");
 
-        var chatCompletion = new AzureOpenAIChatCompletion(
+        var chatCompletionService = new AzureOpenAIChatCompletionService(
             TestConfiguration.AzureOpenAI.ChatDeploymentName,
+            TestConfiguration.AzureOpenAI.ChatModelId,
             TestConfiguration.AzureOpenAI.Endpoint,
             TestConfiguration.AzureOpenAI.ApiKey);
 
-        await ChatCompletionAsync(chatCompletion);
+        await ChatCompletionAsync(chatCompletionService);
     }
 
     private static async Task OpenAIMultiChatCompletionAsync()
     {
         Console.WriteLine("======== Open AI - Multiple Chat Completion ========");
 
-        IChatCompletion chatCompletion = new OpenAIChatCompletion(
+        var chatCompletionService = new OpenAIChatCompletionService(
             TestConfiguration.OpenAI.ChatModelId,
             TestConfiguration.OpenAI.ApiKey);
 
-        await ChatCompletionAsync(chatCompletion);
+        await ChatCompletionAsync(chatCompletionService);
     }
 
-    private static async Task ChatCompletionAsync(IChatCompletion chatCompletion)
+    private static async Task ChatCompletionAsync(IChatCompletionService chatCompletionService)
     {
         var executionSettings = new OpenAIPromptExecutionSettings()
         {
@@ -56,11 +56,10 @@ public static class Example36_MultiCompletion
         var chatHistory = new ChatHistory();
         chatHistory.AddUserMessage("Write one paragraph about why AI is awesome");
 
-        foreach (var completions in await chatCompletion.GetChatCompletionsAsync(chatHistory))
+        foreach (var chatMessageChoice in await chatCompletionService.GetChatMessageContentsAsync(chatHistory, executionSettings))
         {
-            var result = await completions.GetChatMessageAsync();
-            Console.Write(result.Content);
-            Console.WriteLine("-------------");
+            Console.Write(chatMessageChoice.Content);
+            Console.WriteLine("\n-------------\n");
         }
 
         Console.WriteLine();

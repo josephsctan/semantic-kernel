@@ -3,9 +3,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Orchestration;
 using Microsoft.SemanticKernel.Plugins.Core;
-using RepoUtils;
 
 // ReSharper disable once InconsistentNaming
 
@@ -131,10 +129,10 @@ Jane: Goodbye!
         Console.WriteLine("======== SamplePlugins - Conversation Summary Plugin - Summarize ========");
         Kernel kernel = InitializeKernel();
 
-        IKernelPlugin conversationSummaryPlugin = kernel.ImportPluginFromObject<ConversationSummaryPlugin>();
+        IKernelPlugin conversationSummaryPlugin = kernel.ImportPluginFromType<ConversationSummaryPlugin>();
 
         FunctionResult summary = await kernel.InvokeAsync(
-            conversationSummaryPlugin["SummarizeConversation"], ChatTranscript);
+            conversationSummaryPlugin["SummarizeConversation"], new(ChatTranscript));
 
         Console.WriteLine("Generated Summary:");
         Console.WriteLine(summary.GetValue<string>());
@@ -145,10 +143,10 @@ Jane: Goodbye!
         Console.WriteLine("======== SamplePlugins - Conversation Summary Plugin - Action Items ========");
         Kernel kernel = InitializeKernel();
 
-        IKernelPlugin conversationSummary = kernel.ImportPluginFromObject<ConversationSummaryPlugin>();
+        IKernelPlugin conversationSummary = kernel.ImportPluginFromType<ConversationSummaryPlugin>();
 
         FunctionResult summary = await kernel.InvokeAsync(
-            conversationSummary["GetConversationActionItems"], ChatTranscript);
+            conversationSummary["GetConversationActionItems"], new(ChatTranscript));
 
         Console.WriteLine("Generated Action Items:");
         Console.WriteLine(summary.GetValue<string>());
@@ -159,10 +157,10 @@ Jane: Goodbye!
         Console.WriteLine("======== SamplePlugins - Conversation Summary Plugin - Topics ========");
         Kernel kernel = InitializeKernel();
 
-        IKernelPlugin conversationSummary = kernel.ImportPluginFromObject<ConversationSummaryPlugin>();
+        IKernelPlugin conversationSummary = kernel.ImportPluginFromType<ConversationSummaryPlugin>();
 
         FunctionResult summary = await kernel.InvokeAsync(
-            conversationSummary["GetConversationTopics"], ChatTranscript);
+            conversationSummary["GetConversationTopics"], new(ChatTranscript));
 
         Console.WriteLine("Generated Topics:");
         Console.WriteLine(summary.GetValue<string>());
@@ -171,12 +169,12 @@ Jane: Goodbye!
     private static Kernel InitializeKernel()
     {
         Kernel kernel = new KernelBuilder()
-            .WithLoggerFactory(ConsoleLogger.LoggerFactory)
-            .WithAzureOpenAIChatCompletion(
+            .AddAzureOpenAIChatCompletion(
                 TestConfiguration.AzureOpenAI.ChatDeploymentName,
+                TestConfiguration.AzureOpenAI.ChatModelId,
                 TestConfiguration.AzureOpenAI.Endpoint,
                 TestConfiguration.AzureOpenAI.ApiKey)
-        .Build();
+            .Build();
 
         return kernel;
     }

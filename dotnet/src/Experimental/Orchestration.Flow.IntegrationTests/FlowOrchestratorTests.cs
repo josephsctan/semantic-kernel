@@ -14,8 +14,6 @@ using xRetry;
 using Xunit;
 using Xunit.Abstractions;
 
-#pragma warning disable SKEXP0001
-
 namespace SemanticKernel.Experimental.Orchestration.Flow.IntegrationTests;
 
 public sealed class FlowOrchestratorTests : IDisposable
@@ -106,7 +104,6 @@ steps:
         Assert.NotNull(azureOpenAIConfiguration);
 
         return new KernelBuilder()
-            .WithLoggerFactory(this._logger)
             .WithAzureOpenAIChatCompletion(
                 deploymentName: azureOpenAIConfiguration.ChatDeploymentName!,
                 endpoint: azureOpenAIConfiguration.Endpoint,

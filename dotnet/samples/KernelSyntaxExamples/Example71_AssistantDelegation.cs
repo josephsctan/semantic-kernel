@@ -14,6 +14,10 @@ using Resources;
 /// </summary>
 public static class Example71_AssistantDelegation
 {
+    /// <summary>
+    /// Specific model is required that supports assistants and function calling.
+    /// Currently this is limited to Open AI hosted services.
+    /// </summary>
     private const string OpenAIFunctionEnabledModel = "gpt-3.5-turbo-1106";
 
     /// <summary>
@@ -29,58 +33,59 @@ public static class Example71_AssistantDelegation
             return;
         }
 
-        var plugin = KernelPluginFactory.CreateFromObject<MenuPlugin>();
+        IAssistant? menuAssistant = null;
+        IAssistant? parrotAssistant = null;
+        IAssistant? toolAssistant = null;
+        IChatThread? thread = null;
 
-        var menuAssistant =
-            await AssistantBuilder.FromDefinitionAsync(
-                TestConfiguration.OpenAI.ApiKey,
-                model: OpenAIFunctionEnabledModel,
-                template: EmbeddedResource.Read("Assistants.ToolAssistant.yaml"),
-                new[] { plugin });
+        try
+        {
+            var plugin = KernelPluginFactory.CreateFromType<MenuPlugin>();
+            menuAssistant =
+                await new AssistantBuilder()
+                    .WithOpenAIChatCompletion(OpenAIFunctionEnabledModel, TestConfiguration.OpenAI.ApiKey)
+                    .FromTemplate(EmbeddedResource.Read("Assistants.ToolAssistant.yaml"))
+                    .WithDescription("Answer questions about how the menu uses the tool.")
+                    .WithPlugin(plugin)
+                    .BuildAsync();
 
-        var parrotAssistant =
-            await AssistantBuilder.FromDefinitionAsync(
-                TestConfiguration.OpenAI.ApiKey,
-                model: OpenAIFunctionEnabledModel,
-                template: EmbeddedResource.Read("Assistants.ParrotAssistant.yaml"));
+            parrotAssistant =
+                await new AssistantBuilder()
+                    .WithOpenAIChatCompletion(OpenAIFunctionEnabledModel, TestConfiguration.OpenAI.ApiKey)
+                    .FromTemplate(EmbeddedResource.Read("Assistants.ParrotAssistant.yaml"))
+                    .BuildAsync();
 
-        var helperAssistantPlugins = Import(menuAssistant, parrotAssistant);
+            toolAssistant =
+                await new AssistantBuilder()
+                    .WithOpenAIChatCompletion(OpenAIFunctionEnabledModel, TestConfiguration.OpenAI.ApiKey)
+                    .FromTemplate(EmbeddedResource.Read("Assistants.ToolAssistant.yaml"))
+                    .WithPlugins(new[] { menuAssistant.AsPlugin(), parrotAssistant.AsPlugin() })
+                    .BuildAsync();
 
-        var toolAssistant =
-            await AssistantBuilder.FromDefinitionAsync(
-                TestConfiguration.OpenAI.ApiKey,
-                model: OpenAIFunctionEnabledModel,
-                template: EmbeddedResource.Read("Assistants.ToolAssistant.yaml"),
-                helperAssistantPlugins);
-
-        await ChatAsync(
-            toolAssistant,
+            var messages = new string[]
+            {
             "What's on the menu?",
             "Can you talk like pirate?",
-            "Thank you");
+            "Thank you",
+            };
 
-        IEnumerable<IKernelPlugin> Import(params IAssistant[] assistants)
-        {
-            var plugins = new KernelPluginCollection();
-
-            foreach (var assistant in assistants)
+            thread = await toolAssistant.NewThreadAsync();
+            foreach (var message in messages)
             {
-                plugins.Add(KernelPluginFactory.CreateFromObject(assistant, assistant.Id));
+                var messageUser = await thread.AddUserMessageAsync(message);
+                DisplayMessage(messageUser);
+
+                var assistantMessages = await thread.InvokeAsync(toolAssistant);
+                DisplayMessages(assistantMessages);
             }
-
-            return plugins;
         }
-    }
-    private static async Task ChatAsync(IAssistant assistant, params string[] messages)
-    {
-        var thread = await assistant.NewThreadAsync();
-        foreach (var message in messages)
+        finally
         {
-            var messageUser = await thread.AddUserMessageAsync(message).ConfigureAwait(true);
-            DisplayMessage(messageUser);
-
-            var assistantMessages = await thread.InvokeAsync(assistant).ConfigureAwait(true);
-            DisplayMessages(assistantMessages);
+            await Task.WhenAll(
+                thread?.DeleteAsync() ?? Task.CompletedTask,
+                toolAssistant?.DeleteAsync() ?? Task.CompletedTask,
+                parrotAssistant?.DeleteAsync() ?? Task.CompletedTask,
+                menuAssistant?.DeleteAsync() ?? Task.CompletedTask);
         }
     }
 

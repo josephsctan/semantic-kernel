@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Orchestration;
 using Microsoft.SemanticKernel.TemplateEngine.Blocks;
 using Xunit;
 
@@ -206,7 +205,6 @@ public class NamedArgBlockTests
     {
         // Arrange
         var target = new NamedArgBlock($"a=${name}");
-        var variables = new ContextVariables { [name] = "value" };
 
         // Act + Assert
         Assert.Equal(isValid, target.IsValid(out _));
@@ -226,5 +224,53 @@ public class NamedArgBlockTests
         Assert.True(target1.IsValid(out _));
         Assert.True(target2.IsValid(out _));
         Assert.True(target3.IsValid(out _));
+    }
+
+    [Fact]
+    public void ItReturnsArgumentsValueAndType()
+    {
+        // Arrange
+        var target = new NamedArgBlock("a=$var");
+        var arguments = new KernelArguments()
+        {
+            ["var"] = (double)28.2,
+        };
+
+        // Act
+        var result = target.GetValue(arguments);
+
+        // Assert
+        Assert.IsType<double>(result);
+        Assert.Equal(28.2, result);
+    }
+
+    [Fact]
+    public void ItRendersToNullWithNoArgument()
+    {
+        // Arrange
+        var target = new NamedArgBlock("a=$var");
+
+        // Act
+        var result = target.GetValue(new KernelArguments());
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ItRendersToNullIfArgumentIsNull()
+    {
+        // Arrange
+        var target = new NamedArgBlock("a=$var");
+        var arguments = new KernelArguments()
+        {
+            ["var"] = null
+        };
+
+        // Act
+        var result = target.GetValue(arguments);
+
+        // Assert
+        Assert.Null(result);
     }
 }

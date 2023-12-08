@@ -4,14 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.AI;
-using RepoUtils;
 
 // ReSharper disable once InconsistentNaming
 public static class Example61_MultipleLLMs
 {
     /// <summary>
-    /// Show how to run a semantic function and specify a specific service to use.
+    /// Show how to run a prompt function and specify a specific service to use.
     /// </summary>
     public static async Task RunAsync()
     {
@@ -22,9 +20,9 @@ public static class Example61_MultipleLLMs
         string azureModelId = TestConfiguration.AzureOpenAI.ChatModelId;
         string azureEndpoint = TestConfiguration.AzureOpenAI.Endpoint;
 
-        if (azureApiKey == null || azureDeploymentName == null || azureEndpoint == null)
+        if (azureApiKey == null || azureDeploymentName == null || azureModelId == null || azureEndpoint == null)
         {
-            Console.WriteLine("AzureOpenAI endpoint, apiKey, or deploymentName not found. Skipping example.");
+            Console.WriteLine("AzureOpenAI endpoint, apiKey, deploymentName or modelId not found. Skipping example.");
             return;
         }
 
@@ -38,14 +36,13 @@ public static class Example61_MultipleLLMs
         }
 
         Kernel kernel = new KernelBuilder()
-            .WithLoggerFactory(ConsoleLogger.LoggerFactory)
-            .WithAzureOpenAIChatCompletion(
+            .AddAzureOpenAIChatCompletion(
                 deploymentName: azureDeploymentName,
                 endpoint: azureEndpoint,
                 serviceId: "AzureOpenAIChat",
                 modelId: azureModelId,
                 apiKey: azureApiKey)
-            .WithOpenAIChatCompletion(
+            .AddOpenAIChatCompletion(
                 modelId: openAIModelId,
                 serviceId: "OpenAIChat",
                 apiKey: openAIApiKey)
@@ -64,10 +61,10 @@ public static class Example61_MultipleLLMs
 
         var result = await kernel.InvokePromptAsync(
            prompt,
-           new PromptExecutionSettings()
+           new(new PromptExecutionSettings()
            {
                ServiceId = serviceId
-           });
+           }));
         Console.WriteLine(result.GetValue<string>());
     }
 
@@ -79,10 +76,10 @@ public static class Example61_MultipleLLMs
 
         var result = await kernel.InvokePromptAsync(
            prompt,
-           executionSettings: new PromptExecutionSettings()
+           new(new PromptExecutionSettings()
            {
                ModelId = modelId
-           });
+           }));
         Console.WriteLine(result.GetValue<string>());
     }
 
