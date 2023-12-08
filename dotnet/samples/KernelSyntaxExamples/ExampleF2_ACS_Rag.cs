@@ -22,13 +22,13 @@ public static class ExampleF2_ACS_Rag
             MaxIterations = 15,
             MaxTokens = 4000,
         };
-        var planner = new FunctionCallingStepwisePlanner(kernel, config);
+        var planner = new FunctionCallingStepwisePlanner(config);
 
         foreach (var question in questions)
         {
             try
             {
-                FunctionCallingStepwisePlannerResult result = await planner.ExecuteAsync(question);
+                FunctionCallingStepwisePlannerResult result = await planner.ExecuteAsync(kernel, question);
 
                 Console.WriteLine($"Chat history:\n{result.ChatHistory?.AsJson()}");
 
@@ -42,7 +42,7 @@ public static class ExampleF2_ACS_Rag
         Console.WriteLine("Hit any key to exit");
 
         Console.ReadKey();
-    } 
+    }
     /// <summary>
     /// Initialize the kernel and load plugins.
     /// </summary>
@@ -50,9 +50,9 @@ public static class ExampleF2_ACS_Rag
     private static Kernel InitializeKernel()
     {
         Kernel kernel = new KernelBuilder()
-            .WithLoggerFactory(ConsoleLogger.LoggerFactory)
-            .WithAzureOpenAIChatCompletion(
+            .AddAzureOpenAIChatCompletion(
                 TestConfiguration.AzureOpenAI.ChatDeploymentName,
+                TestConfiguration.AzureOpenAI.ChatModelId,
                 TestConfiguration.AzureOpenAI.Endpoint,
                 TestConfiguration.AzureOpenAI.ApiKey)
             .Build();
