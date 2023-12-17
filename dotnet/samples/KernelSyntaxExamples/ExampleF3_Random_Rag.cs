@@ -28,7 +28,7 @@ public static class ExampleF3_Random_Rag
         {
             try
             {
-                FunctionCallingStepwisePlannerResult result = await planner.ExecuteAsync(kernel,question);
+                FunctionCallingStepwisePlannerResult result = await planner.ExecuteAsync(kernel, question);
 
                 Console.WriteLine($"Chat history:\n{result.ChatHistory?.AsJson()}");
 
@@ -50,14 +50,14 @@ public static class ExampleF3_Random_Rag
     /// <returns>A kernel instance</returns>
     private static Kernel InitializeKernel()
     {
-        Kernel kernel = new KernelBuilder()
-            //.WithLoggerFactory(ConsoleLogger.LoggerFactory)
-            .AddAzureOpenAIChatCompletion(
-                TestConfiguration.AzureOpenAI.ChatDeploymentName,
-                TestConfiguration.AzureOpenAI.ChatModelId,
-                TestConfiguration.AzureOpenAI.Endpoint,
-                TestConfiguration.AzureOpenAI.ApiKey)
-            .Build();
+        IKernelBuilder builder = Kernel.CreateBuilder();
+
+        builder.Services.AddAzureOpenAIChatCompletion(
+                deploymentName: TestConfiguration.AzureOpenAI.ChatDeploymentName,
+                modelId: TestConfiguration.AzureOpenAI.ChatModelId,
+                endpoint: TestConfiguration.AzureOpenAI.Endpoint,
+                apiKey: TestConfiguration.AzureOpenAI.ApiKey);
+        var kernel = builder.Build();
 
         // add random answer 
         var rapPlugin = new RandomAnswerPlugin(ConsoleLogger.LoggerFactory);

@@ -49,13 +49,13 @@ public static class ExampleF2_ACS_Rag
     /// <returns>A kernel instance</returns>
     private static Kernel InitializeKernel()
     {
-        Kernel kernel = new KernelBuilder()
-            .AddAzureOpenAIChatCompletion(
-                TestConfiguration.AzureOpenAI.ChatDeploymentName,
-                TestConfiguration.AzureOpenAI.ChatModelId,
-                TestConfiguration.AzureOpenAI.Endpoint,
-                TestConfiguration.AzureOpenAI.ApiKey)
-            .Build();
+        IKernelBuilder builder = Kernel.CreateBuilder();
+        builder.Services.AddAzureOpenAIChatCompletion(
+                        deploymentName: TestConfiguration.AzureOpenAI.ChatDeploymentName,
+                        modelId: TestConfiguration.AzureOpenAI.ChatModelId,
+                        endpoint: TestConfiguration.AzureOpenAI.Endpoint,
+                        apiKey: TestConfiguration.AzureOpenAI.ApiKey);
+        Kernel kernel = builder.Build();
 
         var acsPlugin = new ACSRagPlugin(ConsoleLogger.LoggerFactory);
         kernel.ImportPluginFromObject(acsPlugin, nameof(ACSRagPlugin));

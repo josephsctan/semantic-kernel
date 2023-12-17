@@ -4,14 +4,13 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Planning;
-using Microsoft.SemanticKernel.PromptTemplate.Handlebars;
+using Microsoft.SemanticKernel.PromptTemplates.Handlebars;
 using NCalc.Domain;
 using RepoUtils;
 
 public static class ExampleF4_Import_Yaml
 {
-    const string promptYaml = @"
+    const string PromptYaml = @"
 name: TestPrompt
 template_format: semantic-kernel
 description: Just a test prompt 
@@ -24,7 +23,7 @@ template: |
 ";
 
 
-    const string promptYamlHandlebars = @"
+    const string PromptYamlHandlebars = @"
 name: TestPrompt
 template_format: handlebars
 description: Just a test prompt 
@@ -37,20 +36,20 @@ template: |
 ";
     public static async Task RunAsync()
     {
-        Kernel kernel = new KernelBuilder()
-            //.WithLoggerFactory(ConsoleLogger.LoggerFactory)
-            .AddAzureOpenAIChatCompletion(
-                TestConfiguration.AzureOpenAI.ChatDeploymentName,
-                TestConfiguration.AzureOpenAI.ChatModelId,
-                TestConfiguration.AzureOpenAI.Endpoint,
-                TestConfiguration.AzureOpenAI.ApiKey)
-            .Build();
 
+        IKernelBuilder builder = Kernel.CreateBuilder();
+        builder.Services.AddAzureOpenAIChatCompletion(
+                deploymentName: TestConfiguration.AzureOpenAI.ChatDeploymentName,
+                modelId: TestConfiguration.AzureOpenAI.ChatModelId,
+                endpoint: TestConfiguration.AzureOpenAI.Endpoint,
+                apiKey: TestConfiguration.AzureOpenAI.ApiKey);
 
-        await LoadHandlebarsYaml(kernel);
+        Kernel kernel = builder.Build();
+
+        await LoadHandlebarsYamlAsync(kernel);
         return;
 
-        KernelFunction function = kernel.CreateFunctionFromPromptYaml(promptYaml);
+        KernelFunction function = kernel.CreateFunctionFromPromptYaml(PromptYaml);
         var p1 = function?.Metadata?.Parameters?.FirstOrDefault();
         Console.WriteLine($" {p1?.Name} isrequired={p1?.IsRequired}");
         Console.WriteLine($" Hit any key to exit");
@@ -65,10 +64,10 @@ template: |
         //return kernel;
     }
 
-    private static async Task LoadHandlebarsYaml(Kernel kernel)
+    private static async Task LoadHandlebarsYamlAsync(Kernel kernel)
     {
         KernelFunction function = kernel.CreateFunctionFromPromptYaml(
-            promptYamlHandlebars,
+            PromptYamlHandlebars,
             promptTemplateFactory: new HandlebarsPromptTemplateFactory()
         );
         var p1 = function?.Metadata?.Parameters?.FirstOrDefault();
