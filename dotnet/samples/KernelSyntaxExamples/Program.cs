@@ -24,7 +24,9 @@ public static class Program
         string? defaultFilter = null; // Modify to filter examples
         //defaultFilter = "Example66_FunctionCallingStepwisePlanner";
         // defaultFilter = "ExampleF2_ACS_Rag";
-        defaultFilter = "ExampleF3_Random_Rag";
+        // defaultFilter = "ExampleF3_Random_Rag";
+        //defaultFilter = "Example09_FunctionTypes";
+        defaultFilter = "ExampleF4_Import_Yaml";
 
         // Check if args[0] is provided
         string? filter = args.Length > 0 ? args[0] : defaultFilter;
