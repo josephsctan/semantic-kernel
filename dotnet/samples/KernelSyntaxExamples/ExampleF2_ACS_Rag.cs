@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Planning;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.PromptTemplates.Handlebars;
 using Plugins;
 using RepoUtils;
 

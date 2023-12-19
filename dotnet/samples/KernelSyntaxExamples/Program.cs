@@ -35,6 +35,7 @@ public static class Program
         string? filter = args.Length > 0 ? args[0] : DefaultFilter;
 
         filter = "ExampleF4_Import_Yaml";
+        filter = "Example66_FunctionCallingStepwisePlanner";
         // Run examples based on the filter
         await RunExamplesAsync(filter, cancelToken);
     }
