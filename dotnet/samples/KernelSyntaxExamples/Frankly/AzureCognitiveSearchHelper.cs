@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using Azure;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
+using Microsoft.Extensions.Configuration;
+#pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable CA1823 // Avoid unused private fields
 
 namespace Frankly
 {
@@ -14,6 +17,18 @@ namespace Frankly
         public string SemanticConfig { get; set; } = string.Empty;
         public string Endpoint { get; set; } = string.Empty;
         public string Key { get; set; } = string.Empty;
+        public string SelectFields { get; set; } = string.Empty;
+    }
+
+    public class AzureCognitiveSearchResults
+    {
+        public double Score { get; set; } = -1;
+        public string Content { get; set; } = string.Empty;
+        public string FileType { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
+        public string Metadata { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
+        public string WebUrl { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -21,90 +36,68 @@ namespace Frankly
     /// </summary>
     public class AzureCognitiveSearchHelper
     {
-        AzureCognitiveSearchSettings searchSettings = new AzureCognitiveSearchSettings()
-        {
-            IndexName = "dd-sharepoint-custom-index2",
-            SemanticConfig = "dd-semantic-config",
-            Endpoint = "https://frankly-cognitive-search-basic.search.windows.net",
-            Key = "g1Nir0MToV9jRcefqJLxlrgoimHRYlqfT0bqddkS2TAzSeCYJSwU"
-        };
+
+        AzureCognitiveSearchSettings? searchSettings;
 
         private int truncateResultsTo = 2000;
-
+        private readonly IConfiguration _config;
+        /// <summary>
+        /// DI provides the configuration 
+        /// </summary>
+        /// <param name="configuration"></param>
         public AzureCognitiveSearchHelper()
         {
+
         }
 
-        public async Task<OperationResult<object>> InvokeSearchAsync(string term, bool semantic = false, int numResults = 5)
-        {
-            var retVal = OperationResult<object>.NotOK();
-            if (searchSettings == null)
-            {
-                return retVal.SetFail("Please configure Azure Cognitive Search in System Settings ");
-            }
-
-            try
-            {
-                List<string> stringList = new();
-
-                SearchOptions? options = null;
-
-                if (semantic && !string.IsNullOrWhiteSpace(searchSettings.SemanticConfig))
-                {
-                    options = new SearchOptions()
-                    {
-                        QueryType = SearchQueryType.Semantic,
-                        QueryLanguage = QueryLanguage.EnUs,
-                        SemanticConfigurationName = searchSettings.SemanticConfig,
-                        QueryCaption = QueryCaptionType.Extractive,
-                        QueryCaptionHighlightEnabled = true
-                    };
-
-                    options.Select.Add("content");
-                    options.Select.Add("metadata");
-                    //options.VectorQueries = new[] { };
-                    options.Select.Add("id");
-                }
-
-                Uri endpoint = new Uri(searchSettings.Endpoint);
-
-                // Create a client
-                AzureKeyCredential credential = new AzureKeyCredential(searchSettings.Key);
-                SearchClient client = new SearchClient(endpoint, searchSettings.IndexName, credential);
-
-                SearchResults<SearchDocument> response = await client.SearchAsync<SearchDocument>(term, options);
-                foreach (SearchResult<SearchDocument> result in response.GetResults().Take(numResults))
-                {
-                    SearchDocument doc = result.Document;
-
-
-                    var score = result.Score ?? 0;
-                    var metdata = doc["metadata"];
-                    var content = doc["content"] as string;
-                    string entry = $"<div>Score = {score} <code>{metdata}</code>" +
-                        $"<br/> {content?.TruncateTo(truncateResultsTo, true)}</div>";
-                    stringList.Add(entry);
-                }
-                retVal.SetOK(stringList);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                retVal.SetFail(ex.Message);
-            }
-            return retVal;
-        }
 
         /// <summary>
         /// Vector search 
         /// </summary>
-        /// <param name="term"></param>
         /// <param name="numResults"></param>
         /// <returns></returns>
-        public async Task<OperationResult<object>> InvokeVectorSearchAsync(IReadOnlyList<float> vector,
+        public Task<OperationResult<List<AzureCognitiveSearchResults>>> InvokeVectorSearchAsync(IReadOnlyList<float> vector, int numResults = 5)
+        {
+            return SearchAsync(true, null, vector, true, numResults);
+        }
+
+        /// <summary>
+        /// hybrid search
+        /// </summary>
+        /// <param name="vector"></param>
+        /// <param name="numResults"></param>
+        /// <returns></returns>
+        public Task<OperationResult<List<AzureCognitiveSearchResults>>> InvokeHybridSearchAsync(string term, IReadOnlyList<float> vector, int numResults = 5)
+        {
+            return SearchAsync(true, term, vector, true, numResults);
+        }
+
+
+        public Task<OperationResult<List<AzureCognitiveSearchResults>>> InvokeTextSearchAsync
+            (string term, bool useSemanticRanking = false, int numResults = 5)
+        {
+            return SearchAsync(false, term, null, true, numResults);
+        }
+
+        /// <summary>
+        /// one function to do it all 
+        /// </summary>
+        /// <param name="vectorSeach">if true perform vector search using the 'vector' param, else perform a search using the 
+        /// search using the 'text' param</param>
+        /// <param name="vector">used for sector seaech</param>
+        /// <param name="term">used for text search</param>
+        /// <param name="useSemanticRanking">if true, use semantic ordering</param>
+        /// <param name="numResults">number of results to return (default 5)</param>
+        /// <returns></returns>
+        private async Task<OperationResult<List<AzureCognitiveSearchResults>>> SearchAsync(
+            bool vectorSeach = false,
+            string? term = null,
+            IReadOnlyList<float>? vector = null,
+            bool useSemanticRanking = false,
             int numResults = 5)
         {
-            var retVal = OperationResult<object>.NotOK();
+            var resultsList = new List<AzureCognitiveSearchResults>();
+            var retVal = OperationResult<List<AzureCognitiveSearchResults>>.NotOK();
 
             if (searchSettings == null)
             {
@@ -115,64 +108,143 @@ namespace Frankly
             {
                 List<string> stringList = new();
 
-                SearchOptions? options = null;
+                // search vector to use
+                var searchVector = vectorSeach ? vector : null;
 
-                options = new SearchOptions()
-                {
-                    QueryType = SearchQueryType.Simple,
-                    QueryLanguage = QueryLanguage.EnUs,
-                };
-
-                if (!string.IsNullOrWhiteSpace(searchSettings.SemanticConfig))
-                {
-                    options.QueryType = SearchQueryType.Semantic;
-                    options.SemanticConfigurationName = searchSettings.SemanticConfig;
-                    options.QueryCaption = QueryCaptionType.Extractive;
-                    options.QueryCaptionHighlightEnabled = true;
-                }
-
-                options.VectorQueries.Add(new RawVectorQuery()
-                {
-                    KNearestNeighborsCount = 3,
-                    Fields = { "content_vector" },
-                    // Vector = vector.ToList().AsReadOnly()
-                    Vector = vector
-                });
-
-                options.Select.Add("content");
-                options.Select.Add("metadata");
-                options.Select.Add("id");
-
-                Uri endpoint = new Uri(searchSettings.Endpoint);
+                SearchOptions? options = ConstructSearchOptions(useSemanticRanking, searchVector);
 
                 // Create a client
+                Uri endpoint = new Uri(searchSettings.Endpoint);
                 AzureKeyCredential credential = new AzureKeyCredential(searchSettings.Key);
                 SearchClient client = new SearchClient(endpoint, searchSettings.IndexName, credential);
 
-                SearchResults<SearchDocument> response = await client.SearchAsync<SearchDocument>(null, options);
+                // perform search 
+                SearchResults<SearchDocument> response = await client.SearchAsync<SearchDocument>(term, options);
 
-                await foreach (SearchResult<SearchDocument> result in response.GetResultsAsync())
+                // collect and return results 
+                foreach (SearchResult<SearchDocument> result in response.GetResults().Take(numResults))
                 {
-                    SearchDocument doc = result.Document;
-
-                    var score = result.Score ?? 0;
-                    var metdata = doc["metadata"];
-                    var content = doc["content"] as string;
-                    string entry = $"<div>Score = {score} <code>{metdata}</code>" +
-                        $"<br/> {content?.TruncateTo(truncateResultsTo, true)}</div>";
-                    stringList.Add(entry);
-
-                    if (--numResults <= 0) // equivalent of .Take(numResults)
-                        break;
+                    resultsList.Add(ConvertResults(result));
                 }
-                retVal.SetOK(stringList);
+                retVal.SetOK(resultsList);
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
                 retVal.SetFail(ex.Message);
             }
             return retVal;
         }
+
+
+        /// <summary>
+        /// Create search options.  
+        /// </summary>
+        /// <param name="semanticConfig">If provided, the search options uses semantic ranking </param>
+        /// <param name="vector">If provided, the search options included vector search </param>
+        /// <returns></returns>
+        private SearchOptions ConstructSearchOptions(bool useSemantic = true, IReadOnlyList<float>? vector = null)
+        {
+            string? semanticConfigName = useSemantic && !string.IsNullOrWhiteSpace(searchSettings?.SemanticConfig)
+                    ? searchSettings.SemanticConfig : null;
+
+            SearchOptions options = new SearchOptions()
+            {
+                QueryType = SearchQueryType.Simple,
+            };
+
+            // setup semantic rnaking 
+            if (!string.IsNullOrWhiteSpace(semanticConfigName))
+            {
+                options.QueryType = SearchQueryType.Semantic;
+                options.SemanticSearch = new SemanticSearchOptions()
+                {
+                    SemanticConfigurationName = semanticConfigName,
+                    QueryCaption = new QueryCaption(QueryCaptionType.Extractive) { HighlightEnabled = true }
+                };
+            }
+
+            // setup vector search
+            if (vector != null)
+            {
+                options.VectorSearch = new VectorSearchOptions();
+
+                options.VectorSearch.Queries.Add(new VectorizedQuery(vector.ToArray().AsMemory())
+                {
+                    KNearestNeighborsCount = 3,
+                    Fields = { "content_vector" }
+                });
+            }
+
+            // add other fields
+            options.Select.Add("content");
+            options.Select.Add("metadata");
+            options.Select.Add("id");
+
+            if (searchSettings != null)
+            {
+                // these must come from the settings
+                foreach (var selectField in searchSettings.SelectFields.Split("|", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                {
+                    options.Select.Add(selectField);
+
+                }
+                // future:     "file_type|name|last_modified|web_url";
+                // now:          "name|last_modified|webUrl";
+            }
+
+            return options;
+        }
+
+        private AzureCognitiveSearchResults ConvertResults(SearchResult<SearchDocument> resultDoc)
+        {
+            var acsResult = new AzureCognitiveSearchResults();
+
+            SearchDocument doc = resultDoc.Document;
+            acsResult.Score = resultDoc.Score ?? 0;
+            object? theValue;
+            if (doc.TryGetValue("metadata", out theValue))
+            {
+                acsResult.Metadata = theValue as string ?? string.Empty;
+            }
+            if (doc.TryGetValue("content", out theValue))
+            {
+                acsResult.Content = theValue as string ?? string.Empty;
+            }
+            if (doc.TryGetValue("file_type", out theValue))
+            {
+                acsResult.FileType = theValue as string ?? string.Empty;
+            }
+
+            // name or file_name
+            if (doc.TryGetValue("name", out theValue))
+            {
+                acsResult.FileName = theValue as string ?? string.Empty;
+            }
+            else if (doc.TryGetValue("file_name", out theValue))
+            {
+                acsResult.FileName = theValue as string ?? string.Empty;
+            }
+
+            // web_url or webUrl 
+            if (doc.TryGetValue("web_url", out theValue))
+            {
+                acsResult.WebUrl = theValue as string ?? string.Empty;
+            }
+            else if (doc.TryGetValue("webUrl", out theValue))
+            {
+                acsResult.WebUrl = theValue as string ?? string.Empty;
+            }
+            if (doc.TryGetValue("id", out theValue))
+            {
+                acsResult.Id = theValue as string ?? string.Empty;
+            }
+            return acsResult;
+        }
+
+
+
     }
+
+
+
 }

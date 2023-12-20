@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Frankly;
@@ -32,12 +33,14 @@ public sealed class ACSRagPlugin
     {
         string returnString = "";
         var ACSH = new AzureCognitiveSearchHelper();
-        var result = await ACSH.InvokeSearchAsync(query, true, 3);
+        var result = await ACSH.InvokeTextSearchAsync(query, true, 3);
         if (result.OK)
         {
+            var textResults = result.Result.Select(p => p.Content).ToList();
+
             if (result.Result?.GetType() == typeof(List<string>))
             {
-                returnString = string.Join("\n", (result.Result as List<string>)!);
+                returnString = string.Join("\n", textResults);
             }
             else
             {
