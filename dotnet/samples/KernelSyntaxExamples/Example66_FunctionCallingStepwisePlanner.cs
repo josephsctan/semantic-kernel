@@ -6,6 +6,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Planning;
 using Microsoft.SemanticKernel.Plugins.Core;
 using Plugins;
+using RepoUtils;
 
 public static class Example66_FunctionCallingStepwisePlanner
 {
@@ -14,8 +15,8 @@ public static class Example66_FunctionCallingStepwisePlanner
         string[] questions = new string[]
         {
             "What is the current hour number, plus 5?",
-            "What is 387 minus 22? Email the solution to John and Mary.",
-            "Write a limerick, translate it to Spanish, and send it to Jane",
+       //     "What is 387 minus 22? Email the solution to John and Mary.",
+         //   "Write a limerick, translate it to Spanish, and send it to Jane",
         };
 
         var kernel = InitializeKernel();

@@ -29,9 +29,13 @@ public static class Program
         using CancellationTokenSource cancellationTokenSource = new();
         CancellationToken cancelToken = cancellationTokenSource.ConsoleCancellationToken();
 
+        string? defaultFilter = null; // Modify to filter examples
+
         // Check if args[0] is provided
         string? filter = args.Length > 0 ? args[0] : DefaultFilter;
 
+        filter = "ExampleF4_Import_Yaml";
+        filter = "Example66_FunctionCallingStepwisePlanner";
         // Run examples based on the filter
         await RunExamplesAsync(filter, cancelToken);
     }
@@ -42,7 +46,7 @@ public static class Program
             .Select(type => type.Name).ToList();
 
         // Filter and run examples
-        foreach (var example in examples)
+        foreach (var example in examples)// .Where(p => p == nameof(Example63_FlowOrchestrator)))
         {
             if (string.IsNullOrEmpty(filter) || example.Contains(filter, StringComparison.OrdinalIgnoreCase))
             {
